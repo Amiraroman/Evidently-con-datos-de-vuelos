@@ -1,0 +1,48 @@
+name: CI/CD vuelos
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+      - name: Ejecutar pruebas
+        run: python -m pytest -q
+      - name: Validar referencia.csv y actual.csv
+        run: python scripts/validar.py datos/referencia.csv datos/actual.csv
+      - name: Generar sitio (index.html + informe de Evidently)
+        run: python scripts/generar_sitio.py
+      - name: Subir artefacto de GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: sitio
+
+  cd:
+    needs: ci            # si CI falla, este job se omite y Pages conserva el último sitio válido
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Desplegar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
