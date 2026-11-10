@@ -4,5 +4,4 @@ __pycache__/
 .venv/
 venv/
 sitio/
-datos/vuelos_nyc_2013.csv
 .DS_Store
